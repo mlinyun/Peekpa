@@ -124,3 +124,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         """返回用户的访问 Token"""
         refresh = PeekpaAccessToken.for_user(self)
         return str(refresh)
+
+
+class Avatar(models.Model):
+    """用户头像模型类"""
+    id = models.AutoField(primary_key=True)  # 头像 ID，主键
+    name = models.CharField(max_length=200)  # 头像名称
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='avatar')  # 头像所属用户，外键，和用户关联
+    url = models.URLField()  # 头像文件 URL

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     # 'apps.api',  # 注册 API 应用
     'apps.peekpauser',  # 注册用户管理应用
     'apps.company',  # 注册公司管理应用
+    'apps.job',  # 注册职位管理应用
 ]
 
 MIDDLEWARE = [
