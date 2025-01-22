@@ -15,8 +15,32 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from drf_yasg import openapi
+from drf_yasg.views import get_schema_view
+from rest_framework import permissions
+
+from .views import BothHttpAndHttpsSchemaGenerator, home
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title="PeekpaBackend API",
+        default_version="v1",
+        description="这是 PeekpaBackend 项目的 API 文档",
+        terms_of_service="https://www.google.com/policies/terms/",
+        contact=openapi.Contact(email="lingyun2311@gmail.com"),
+        license=openapi.License(name="BSD License"),
+    ),
+    public=True,
+    permission_classes=[permissions.AllowAny],
+    generator_class=BothHttpAndHttpsSchemaGenerator,
+)
 
 urlpatterns = [
+    path("", home, name="home"),
     path('admin/', admin.site.urls),
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path("api/api.json", schema_view.without_ui(cache_timeout=0), name="schema-json"),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    path("api/", include("apps.api.urls")),  # 注册 API 路由
 ]

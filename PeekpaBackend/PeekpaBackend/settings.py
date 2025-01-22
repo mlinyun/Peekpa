@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'drf_yasg',  # 注册 drf_yasg 应用
     'rest_framework',  # 注册 REST framework 应用
     'rest_framework_simplejwt.token_blacklist',  # 注册 JWT 黑名单应用
     'apps.peekpauser',  # 注册用户管理应用
@@ -150,4 +151,15 @@ SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('apps.api.authentications.PeekpaAccessToken',),  # 将 Token 类引入
     'ACCESS_TOKEN_LIFETIME': datetime.timedelta(days=5),  # 指定访问令牌的有效期 5 天
     'REFRESH_TOKEN_LIFETIME': datetime.timedelta(days=1),  # 指定刷新令牌的有效期 1 天
+}
+
+# drf-yasg 配置
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    }
 }

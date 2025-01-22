@@ -5,6 +5,7 @@ from shortuuidfield import ShortUUIDField
 
 from apps.api.authentications import PeekpaAccessToken
 
+
 # Create your models here.
 class PeekpaUserManager(BaseUserManager):
     """
@@ -116,7 +117,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def name(self):
         """返回用户的全名"""
-        return "{} {}".format(self.last_name, self.first_name)
+        return "{} {}".format(self.first_name, self.last_name)
 
     @property
     def token(self):
