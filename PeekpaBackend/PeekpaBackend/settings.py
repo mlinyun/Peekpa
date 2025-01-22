@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-
+import datetime
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -35,7 +35,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',  # 注册 REST framework 应用
+    'rest_framework_simplejwt.token_blacklist',  # 注册 JWT 黑名单应用
     'apps.peekpauser',  # 注册用户管理应用
+    'apps.api',  # 注册 API 应用
 ]
 
 MIDDLEWARE = [
@@ -122,3 +125,29 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'peekpauser.User'  # 使用自定义的用户模型
+
+# Django REST framework 配置
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    ),  # 指定默认的渲染器类，将响应数据渲染为 JSON 格式
+    # 指定默认的分页类，用于对查询结果进行分页，这里使用 LimitOffsetPagination 类
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
+    "PAGE_SIZE": 10,  # 指定每页显示的数据条数
+    # 指定默认的过滤器后端类，这里使用 DjangoFilterBackend 类
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
+}
+
+# Django REST framework Simple JWT 配置
+SIMPLE_JWT = {
+    'AUTH_HEADER_TYPES': ['Bearer'],  # 指定认证头的类型，这里使用 Bearer
+    'ROTATE_REFRESH_TOKENS': False,  # 是否在每次刷新令牌时轮换 Token
+    'BLACKLIST_AFTER_ROTATION': True,  # 是否在轮换 Token 后将旧 Token 加入黑名单
+    'USER_ID_FIELD': 'uid',  # 指定用户模型中的用户 uid 字段作为用户的唯一标识
+    'USER_ID_CLAIM': 'uid',  # 说明在 Token 中的唯一标识字段是 uid
+    'ALGORITHM': 'HS256',  # 指定签名算法
+    'SIGNING_KEY': SECRET_KEY,  # 指定签名密钥
+    'AUTH_TOKEN_CLASSES': ('apps.api.authentications.PeekpaAccessToken',),  # 将 Token 类引入
+    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(days=5),  # 指定访问令牌的有效期 5 天
+    'REFRESH_TOKEN_LIFETIME': datetime.timedelta(days=1),  # 指定刷新令牌的有效期 1 天
+}
