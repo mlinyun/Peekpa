@@ -1,9 +1,9 @@
+from datetime import datetime
+from django.db.models import Sum
 from django_filters import rest_framework as filters
-
 from apps.api.serializers import JobListSerializer, JobSerializer, InterviewSerializer, InvitationSerializer, \
     InterviewInvitationSerializer
 from django_filters.rest_framework import DjangoFilterBackend
-
 from apps.company.models import Company
 from apps.job.models import Job, PublishJob, Interview, Invitation
 from rest_framework import generics, permissions, status
@@ -12,6 +12,8 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from apps.peekpauser.models import User
 
 
 class JobListFilter(filters.FilterSet):
@@ -163,7 +165,7 @@ class ManageInvitationView(generics.CreateAPIView):
     serializer_class = InvitationSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.IsAdminUser]
-    lookup_field = 'id'
+    lookup_field = "id"
 
 
 class ManageInvitationDetailView(generics.UpdateAPIView):
@@ -171,11 +173,11 @@ class ManageInvitationDetailView(generics.UpdateAPIView):
     serializer_class = InterviewInvitationSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.IsAdminUser]
-    lookup_field = 'ivid'
+    lookup_field = "ivid"
 
     def get_object(self):
-        invitation_id = self.kwargs['ivid']  # 获取URL中的参数 ivid
-        interview_id = self.kwargs['iid']
+        invitation_id = self.kwargs["ivid"]  # 获取URL中的参数 ivid
+        interview_id = self.kwargs["iid"]
 
         # 根据 id 和 uid 过滤 Invitation 对象
         invitation = get_object_or_404(
@@ -188,3 +190,59 @@ class ManageInvitationDetailView(generics.UpdateAPIView):
 
     def put(self, request, *args, **kwargs):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+
+
+class DashboardView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        content = dict()
+        # 获取公司 ID
+        company_id = self.request.user.details.get("company_id")
+        # 获取公司下的所有职位 ID
+        job_ids = Job.objects.filter(company__id=company_id).values_list("id", flat=True)
+        # 获取公司下的所有面试 ID
+        interview_id = Interview.objects.filter(job__id__in=job_ids).values_list("id", flat=True)
+        # 职位总数
+        content["jobs_total"] = Job.objects.filter(company__id=company_id).count()
+        # 正在招聘的职位数
+        content["jobs_open"] = Job.objects.filter(status=Job.STATUS_PUBLISH, company__id=company_id).count()
+        # 招聘结束的职位数
+        content["jobs_finish"] = Job.objects.filter(status=Job.STATUS_FINISH, company__id=company_id).count()
+        # 已关闭的职位数
+        content["jobs_close"] = Job.objects.filter(status=Job.STATUS_CLOSE, company__id=company_id).count()
+        # 正在进行的面试数目
+        content["interviewing"] = Interview.objects.filter(status__in=[0, 1, 2, 3], job__id__in=job_ids).count()
+        # 收到的简历数目
+        content["resumes"] = Interview.objects.filter(job__id__in=job_ids).count()
+        # 发出的面试邀请数目
+        content["invitation_number"] = Invitation.objects.filter(interview__id__in=interview_id).count()
+        # 新增简历数目
+        content["resumes_new"] = Interview.objects.filter(job__id__in=job_ids,
+                                                          publish_time__date=datetime.now().date()).count()
+        # 公司用户数目
+        content["users_number"] = User.objects.filter(is_active=True,
+                                                      details__contains={"company_id": company_id}).count()
+        # 计划招聘人员数量
+        content["hired_number"] = \
+            Job.objects.filter(company__id=company_id).aggregate(total_hire_number=Sum("hire_number"))[
+                "total_hire_number"]
+        # 已经招聘人员数量
+        content["pass_number"] = Interview.objects.filter(job__id__in=job_ids, status=4).count()
+        # 新发布的职位列表
+        content["new_jobs"] = [{
+            "id": item.id,
+            "title": item.title,
+            "publish_time": item.publish_time,
+        } for item in
+            Job.objects.filter(company__id=company_id, status=Job.STATUS_PUBLISH).order_by("-publish_time")[:5]]
+        # 新收到的简历列表
+        content["new_interviews"] = [
+            {
+                "id": item.job.id,
+                "title": item.job.title,
+                "publish_time": item.publish_time
+            } for item in Interview.objects.filter(job__id__in=job_ids).order_by("-publish_time")[:5]
+        ]
+        return Response(data=content, status=status.HTTP_200_OK)
