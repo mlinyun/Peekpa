@@ -1,16 +1,20 @@
 import uuid
+
+from django.contrib.auth.models import AnonymousUser
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django_filters import rest_framework as filters
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, status, generics
+from rest_framework.generics import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
-from apps.api.serializers import ResumeSerializer, AvatarSerializer, JobListSerializer, JobSerializer
+from apps.api.serializers import ResumeSerializer, AvatarSerializer, JobListSerializer, JobSerializer, \
+    InterviewInvitationSerializer
 
-from apps.job.models import Resume, Job
+from apps.job.models import Resume, Job, Invitation, Interview, PublishJob
 from apps.peekpauser.models import Avatar
 from urllib.parse import unquote
 
@@ -113,3 +117,45 @@ class JobDetailView(generics.RetrieveAPIView):
     authentication_classes = [PassGetAuthentication]
     permission_classes = [IsGetForAll]
     lookup_field = "id"
+
+
+class InvitationDetailView(generics.UpdateAPIView):
+    queryset = Invitation.objects.all()
+    serializer_class = InterviewInvitationSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        obj = get_object_or_404(self.get_queryset(), candidate=self.request.user, id=self.kwargs["iid"])
+        return obj
+
+    def put(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+
+
+class ApplyJobView(APIView):
+    authentication_classes = [PassGetAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, id):
+        data = dict()
+        if isinstance(request.user, AnonymousUser):
+            data["message"] = "请登录之后再投递简历。"
+            return Response(data=data, status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            user = request.user
+            job = get_object_or_404(Job.objects.all(), id=id)
+            poster = PublishJob.objects.get(job__id=id).user
+            if job.status != Job.STATUS_PUBLISH:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            if user.is_staff:
+                data["message"] = "您不可以通过此账号投递简历。"
+                return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+            resumes = user.resume.filter(is_active=True)
+            if resumes.count() == 0:
+                data["message"] = "您还未上传简历，请上传简历之后再投递。"
+                return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                resume = resumes.all().first()
+                Interview.objects.create(job=job, interviewer=poster, candidate=user, resume=resume)
+                return Response(data=data, status=status.HTTP_200_OK)

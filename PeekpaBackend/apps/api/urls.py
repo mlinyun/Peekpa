@@ -1,9 +1,11 @@
 from django.urls import path
 from apps.api.view_auth import LoginView, LoginAdminView, RegisterUserView, UserAdminView, UserAdminDetailView, \
     CompanyAdminView
-from apps.api.view_job import ResumeView, AvatarView, JobListView, JobDetailView
+from apps.api.view_job import ResumeView, AvatarView, JobListView, JobDetailView, InvitationDetailView, ApplyJobView
 from apps.api.view_manage import ManageJobListView, ManageJobNameListView, ManageJobDetailView, ManageInterviewListView, \
     ManageInterviewDetailView, ManageInvitationView, ManageInvitationDetailView, DashboardView
+
+from apps.api.view_company import CompanyListView, CompanyDetailView
 
 app_name = "api"
 
@@ -47,4 +49,12 @@ urlpatterns = [
     path("job/", JobListView.as_view(), name="job_list_view"),
     # 招聘网站前端职位详情接口
     path("job/<str:id>/", JobDetailView.as_view(), name="job_detail_view"),
+    # 回复面试邀请消息接口
+    path("invitation/<str:iid>/", InvitationDetailView.as_view(), name="invitation_detail_view"),
+    # 职位申请接口
+    path("job/<str:id>/apply/", ApplyJobView.as_view(), name="apply_job_view"),
+    # 公司列表接口
+    path("company/", CompanyListView.as_view(), name="company_list_view"),
+    # 公司详情接口
+    path("company/<str:id>/", CompanyDetailView.as_view(), name="company_detail_view"),
 ]

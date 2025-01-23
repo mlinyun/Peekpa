@@ -243,3 +243,31 @@ class InvitationSerializer(serializers.ModelSerializer):
         fields = ["message", "response", "candidate", "publish_time", "due_time", "job", "user_uid", "update_time",
                   "status"]
         read_only_fields = ["response", "publish_time", "due_time", "candidate", "job", "update_time"]
+
+
+class CompanyListSerializer(serializers.ModelSerializer):
+    jobs = serializers.SerializerMethodField()
+    interviews = serializers.SerializerMethodField()
+
+    def get_interviews(self, obj):
+        job_ids = obj.jobs.values_list("id", flat=True)
+        return Interview.objects.filter(status__in=[0, 1, 2, 3], job__id__in=job_ids).count()
+
+    def get_jobs(self, obj):
+        return obj.jobs.count()
+
+    class Meta:
+        model = Company
+        fields = ["id", "name", "slogan", "avatar", "tags", "size", "jobs", "interviews"]
+
+
+class CompanySerializer(serializers.ModelSerializer):
+    jobs = serializers.SerializerMethodField()
+
+    def get_jobs(self, obj):
+        jobs = Job.objects.filter(company__id=obj.id, status=Job.STATUS_PUBLISH).all()
+        return JobListSerializer(jobs, many=True).data
+
+    class Meta:
+        model = Company
+        fields = ["id", "name", "slogan", "avatar", "tags", "size", "jobs", "website", "description"]
