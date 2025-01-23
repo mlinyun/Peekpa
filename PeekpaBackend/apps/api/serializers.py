@@ -94,3 +94,26 @@ class JobListSerializer(serializers.ModelSerializer):
                   "company_tags", "company_avatar", "company_id"]
         read_only_fields = ["id", "publish_time", "pass_number", "resumes", "company_name", "company_tags",
                             "company_avatar", "company_id"]
+
+
+class JobSerializer(serializers.ModelSerializer):
+    pass_number = serializers.SerializerMethodField()
+    company_name = serializers.CharField(source="company.name", read_only=True)
+    company_tags = serializers.CharField(source="company.tags", read_only=True)
+    company_size = serializers.CharField(source="company.size", read_only=True)
+    company_website = serializers.CharField(source="company.website", read_only=True)
+    company_id = serializers.CharField(source="company.id", read_only=True)
+    resumes = serializers.SerializerMethodField()
+
+    def get_resumes(self, obj):
+        return obj.resumes.count()
+
+    def get_pass_number(self, obj):
+        return Interview.objects.filter(job__id=obj.id, status=4).count()
+
+    class Meta:
+        model = Job
+        fields = ["id", "title", "status", "city", "location", "salary_min", "salary_max", "salary_count", "education",
+                  "pass_number", "hire_number", "experience", "benefit", "description", "publish_time", "resumes",
+                  "company_name", "company_tags", "company_size", "company_website", "company_id"]
+        read_only_fields = ["id", "pass_number", "publish_time", "resumes"]

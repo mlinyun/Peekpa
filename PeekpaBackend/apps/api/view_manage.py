@@ -1,13 +1,15 @@
 from django_filters import rest_framework as filters
 
-from apps.api.serializers import JobListSerializer
+from apps.api.serializers import JobListSerializer, JobSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 
 from apps.company.models import Company
 from apps.job.models import Job, PublishJob
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
 from apps.api.authentications import JWTAuthentication
 from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 
 class JobListFilter(filters.FilterSet):
@@ -49,3 +51,40 @@ class ManageJobListView(generics.ListCreateAPIView):
             publish_job_obj.save()
         else:
             raise ValidationError
+
+
+class ManageJobNameListView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        is_manager = self.request.user.details.get("is_manager", False)
+        company = self.request.user.details.get("company_id")
+        job_list = Job.objects.filter(company__id=company)
+        if not is_manager:
+            jobs = PublishJob.objects.filter(user__uid=self.request.user.uid)
+            job_list = [item.job for item in jobs]
+        content = []
+        for item in job_list:
+            content.append({
+                "id": item.id,
+                "title": item.title,
+            })
+        return Response(data=content, status=status.HTTP_200_OK)
+
+
+class ManageJobDetailView(generics.RetrieveUpdateAPIView):
+    queryset = Job.objects.all()
+    serializer_class = JobSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAdminUser]
+    lookup_field = "id"
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        company_id = self.request.user.details.get("company_id", -1)
+        queryset = queryset.filter(company__id=company_id)
+        return queryset
+
+    def put(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
