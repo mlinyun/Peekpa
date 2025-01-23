@@ -1,5 +1,6 @@
 from django.urls import path
-from apps.api.view_auth import LoginView, LoginAdminView, RegisterUserView, UserAdminView, UserAdminDetailView
+from apps.api.view_auth import LoginView, LoginAdminView, RegisterUserView, UserAdminView, UserAdminDetailView, \
+    CompanyAdminView
 from apps.api.view_job import ResumeView, AvatarView
 
 app_name = "api"
@@ -19,4 +20,6 @@ urlpatterns = [
     path("avatar/upload/", AvatarView.as_view(), name="avatar_upload"),
     # 公司员工修改接口
     path("manage/user/<str:uid>/", UserAdminDetailView.as_view(), name="user_admin_detail"),
+    # 公司列表接口
+    path("manage/company/", CompanyAdminView.as_view(), name="company_admin"),
 ]

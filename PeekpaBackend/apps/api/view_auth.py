@@ -8,9 +8,11 @@ from django.contrib.auth.models import update_last_login
 from rest_framework import generics, status
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from apps.api.serializers import LoginSerializer, RegisterUserSerializer, AdminUserListSerializer
+from apps.api.serializers import LoginSerializer, RegisterUserSerializer, AdminUserListSerializer, \
+    AdminCompanyListSerializer
+from apps.api.permissions import IsCompanyAdminUser, IsSuperUser
+from apps.company.models import Company
 from apps.peekpauser.models import User
-from apps.api.permissions import IsCompanyAdminUser
 
 
 class LoginBaseView(generics.GenericAPIView):
@@ -116,3 +118,45 @@ class UserAdminDetailView(generics.UpdateAPIView):
 
     def put(self, request, *args, **kwargs):
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+
+
+class CompanyListFilter(filters.FilterSet):
+    q = filters.CharFilter(method="my_custom_filter", label="Search")
+
+    class Meta:
+        model = Company
+        fields = ["q"]
+
+    def my_custom_filter(self, queryset, name, value):
+        return queryset.filter(name__contains=value)
+
+
+class CompanyAdminView(generics.ListCreateAPIView):
+    queryset = Company.objects.all().order_by("-id")
+    serializer_class = AdminCompanyListSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = CompanyListFilter
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsSuperUser]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validata_data = serializer.validated_data
+
+        # 创建公司
+        name = validata_data.get("name")
+        website = validata_data.get("website")
+        company = Company.objects.create(name=name, website=website)
+
+        # 创建公司经理
+        password = validata_data.get("password")
+        first_name = validata_data.get("first_name")
+        last_name = validata_data.get("last_name")
+        email = validata_data.get("email")
+        details = {"company_id": company.id, "is_manager": True}
+        user = User.objects.create(email=email, first_name=first_name, last_name=last_name, details=details,
+                                   is_staff=True)
+        user.set_password(password)
+        user.save()
+        return Response(status=status.HTTP_201_CREATED)

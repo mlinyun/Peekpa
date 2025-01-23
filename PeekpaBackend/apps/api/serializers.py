@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from apps.company.models import Company
 from apps.job.models import Resume
 from apps.peekpauser.models import User, Avatar
 
@@ -45,3 +46,27 @@ class AvatarSerializer(serializers.ModelSerializer):
     class Meta:
         model = Avatar
         fields = "__all__"
+
+
+class AdminCompanyUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["uid", "email", "first_name", "last_name", "data_join"]
+
+
+class AdminCompanyListSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+    email = serializers.CharField(write_only=True, read_only=False)
+    first_name = serializers.CharField(write_only=True)
+    last_name = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True)
+
+    def get_user(self, obj):
+        user = User.objects.filter(details__contains={"company_id": obj.id, "is_manager": True})
+        if user.count():
+            return AdminCompanyUserSerializer(user.all().first()).data
+        return None
+
+    class Meta:
+        model = Company
+        fields = ["id", "name", "website", "user", "email", "first_name", "last_name", "password"]
