@@ -1,3 +1,7 @@
+import uuid
+
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.db.models import Q
 from django_filters import rest_framework as filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -5,14 +9,18 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from django.contrib import auth
 from django.contrib.auth.models import update_last_login
-from rest_framework import generics, status
+from rest_framework import generics, status, permissions
+from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from apps.api.serializers import LoginSerializer, RegisterUserSerializer, AdminUserListSerializer, \
-    AdminCompanyListSerializer
+    AdminCompanyListSerializer, UserSerializer, CompanyProfileSerializer
 from apps.api.permissions import IsCompanyAdminUser, IsSuperUser
 from apps.company.models import Company
-from apps.peekpauser.models import User
+from apps.peekpauser.models import User, Avatar
+from rest_framework_simplejwt.exceptions import TokenError
+
+from apps.api.authentications import PeekpaAccessToken
 
 
 class LoginBaseView(generics.GenericAPIView):
@@ -160,3 +168,90 @@ class CompanyAdminView(generics.ListCreateAPIView):
         user.set_password(password)
         user.save()
         return Response(status=status.HTTP_201_CREATED)
+
+
+class ProfileView(generics.RetrieveUpdateAPIView):
+    queryset = User.objects.filter(is_staff=False)
+    serializer_class = UserSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        user = get_object_or_404(self.queryset, uid=self.request.user.uid)
+        return user
+
+    def put(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+
+    def patch(self, request, *args, **kwargs):
+        partial = True
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        if serializer.validated_data.get("password"):
+            instance.set_password(serializer.validated_data.get("password"))
+            instance.save()
+        return Response(serializer.data)
+
+
+class CompanyProfileView(generics.RetrieveUpdateAPIView):
+    queryset = Company.objects.all()
+    serializer_class = CompanyProfileSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        company_id = self.request.user.details.get("company_id", -1)
+        company = get_object_or_404(self.queryset, id=company_id)
+        return company
+
+    def put(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+
+    def patch(self, request, *args, **kwargs):
+        company = self.get_object()
+        # 修改密码
+        if "password" in request.data and request.data.get("password"):
+            request.user.set_password(request.data.get("password"))
+            request.user.save()
+        if request.user.details.get("is_manager", False):
+            # 更新公司头像
+            if "avatar_file" in request.data:
+                file = request.data.get("avatar_file")
+                old_avatars = Avatar.objects.filter(user=self.request.user)
+                if old_avatars.count():
+                    if old_avatars.count():
+                        # 删除旧的 Avatar 对象及其关联的文件
+                        for old_avatar in old_avatars:
+                            default_storage.delete(old_avatar.url[6:])
+                        old_avatars.delete()
+                file_name = file.name
+                file_path = f"avatar/{'.'.join(file_name.split('.')[:-1])}_{str(uuid.uuid4())[:8]}.{file_name.split('.')[-1]}"
+                saved_path = default_storage.save(file_path, ContentFile(file.read()))
+                avatar = Avatar.objects.create(name=file_name, user=self.request.user,
+                                               url="media/{}".format(saved_path))
+                company.avatar = avatar.url
+            company.slogan = request.data.get("slogan", company.slogan)
+            company.size = request.data.get("size", company.size)
+            company.description = request.data.get("description", company.description)
+            company.tags = request.data.get("tags", company.tags)
+            company.save()
+        serializer = self.get_serializer(company)
+        return Response(data=serializer.data)
+
+
+class LogoutView(APIView):
+    queryset = User.objects.filter(is_staff=False)
+    authentication_classes = [JWTAuthentication]
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request):
+        if hasattr(request, "auth") and request.auth and isinstance(request.auth, PeekpaAccessToken):
+            try:
+                request.auth.blacklist()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            except TokenError:
+                return Response(status=status.HTTP_400_BAD_REQUEST, data="bad token")
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)

@@ -271,3 +271,85 @@ class CompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
         fields = ["id", "name", "slogan", "avatar", "tags", "size", "jobs", "website", "description"]
+
+
+class JobApplicationSerializer(serializers.ModelSerializer):
+    timestamp = serializers.SerializerMethodField()
+    invitation = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    company_name = serializers.CharField(source="company.name")
+
+    def get_invitation(self, obj):
+        interview = Interview.objects.get(candidate=self.context.get("request").user, job=obj)
+        invitations = Invitation.objects.filter(interview=interview,
+                                                candidate=self.context.get("request").user,
+                                                status=interview.status)
+        if invitations.count():
+            return InterviewInvitationSerializer(invitations.all().first()).data
+        return None
+
+    def get_status(self, obj):
+        interview = Interview.objects.get(candidate=self.context.get("request").user, job=obj)
+        if interview:
+            return interview.status
+        return None
+
+    def get_timestamp(self, obj):
+        interview = Interview.objects.get(candidate=self.context.get("request").user, job=obj)
+        if interview:
+            return interview.publish_time
+        return None
+
+    class Meta:
+        model = Job
+        fields = ["id", "title", "status", "salary_min", "salary_max", "salary_count", "timestamp", "invitation",
+                  "status", "company_name"]
+
+
+class UserResumeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Resume
+        fields = ["name", "url"]
+
+
+class UserSerializer(serializers.ModelSerializer):
+    applications = serializers.SerializerMethodField()
+    resume = serializers.SerializerMethodField()
+    password = serializers.CharField(write_only=True, allow_blank=True)
+
+    def get_resume(self, obj):
+        resume = Resume.objects.filter(user__uid=obj.uid, is_active=True)
+        if resume.count():
+            return UserResumeSerializer(resume[0]).data
+        return None
+
+    def get_applications(self, obj):
+        applications = Interview.objects.filter(candidate__uid=obj.uid)
+        jobs = []
+        for apply in applications:
+            jobs.append(apply.job)
+        return JobApplicationSerializer(jobs, context=self.context, many=True).data
+
+    class Meta:
+        model = User
+        fields = ["uid", "email", "first_name", "last_name", "gender", "details", "resume",
+                  "applications", "password"]
+        read_only_fields = ["uid", "email", "applications"]
+
+
+class CompanyUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["email", "name", "gender"]
+
+
+class CompanyProfileSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+    password = serializers.CharField(write_only=True, allow_blank=True)
+
+    def get_user(self, obj):
+        return CompanyUserSerializer(self.context.get("request").user).data
+
+    class Meta:
+        model = Company
+        fields = ["name", "slogan", "avatar", "tags", "size", "website", "description", "user", "password"]

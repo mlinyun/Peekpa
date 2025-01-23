@@ -1,6 +1,6 @@
 from django.urls import path
 from apps.api.view_auth import LoginView, LoginAdminView, RegisterUserView, UserAdminView, UserAdminDetailView, \
-    CompanyAdminView
+    CompanyAdminView, CompanyProfileView, ProfileView, LogoutView
 from apps.api.view_job import ResumeView, AvatarView, JobListView, JobDetailView, InvitationDetailView, ApplyJobView
 from apps.api.view_manage import ManageJobListView, ManageJobNameListView, ManageJobDetailView, ManageInterviewListView, \
     ManageInterviewDetailView, ManageInvitationView, ManageInvitationDetailView, DashboardView
@@ -60,4 +60,10 @@ urlpatterns = [
     path("company/<str:id>/", CompanyDetailView.as_view(), name="company_detail_view"),
     # 首页接口初始化
     path("index/", IndexView.as_view(), name="index_view"),
+    # 求职者个人信息修改接口
+    path("profile/", ProfileView.as_view(), name="profile_user_view"),
+    # 公司用户信息修改接口
+    path("manage/setting/", CompanyProfileView.as_view(), name="company_profile_user_view"),
+    # 登出接口
+    path("auth/logout/", LogoutView.as_view(), name="logout_view"),
 ]
