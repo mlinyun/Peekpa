@@ -3,7 +3,7 @@ from apps.api.view_auth import LoginView, LoginAdminView, RegisterUserView, User
     CompanyAdminView
 from apps.api.view_job import ResumeView, AvatarView
 from apps.api.view_manage import ManageJobListView, ManageJobNameListView, ManageJobDetailView, ManageInterviewListView, \
-    ManageInterviewDetailView
+    ManageInterviewDetailView, ManageInvitationView, ManageInvitationDetailView
 
 app_name = "api"
 
@@ -35,4 +35,10 @@ urlpatterns = [
     # 面试详情接口
     path("manage/job/<str:id>/interviews/<str:iid>/", ManageInterviewDetailView.as_view(),
          name="manage_job_interview_detail_view"),
+    # 消息创建接口
+    path("manage/job/<str:id>/interviews/<str:iid>/invitation/", ManageInvitationView.as_view(),
+         name="manage_job_interview_invitation_view"),
+    # 消息修改接口
+    path("manage/job/<str:id>/interviews/<str:iid>/invitation/<str:ivid>/", ManageInvitationDetailView.as_view(),
+         name="manage_job_interview_invitation_detail_view"),
 ]

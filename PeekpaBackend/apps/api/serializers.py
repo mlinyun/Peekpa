@@ -2,6 +2,7 @@ from rest_framework import serializers
 from apps.company.models import Company
 from apps.job.models import Resume, Job, Interview, Invitation
 from apps.peekpauser.models import User, Avatar
+from rest_framework.generics import get_object_or_404
 
 
 class LoginSerializer(serializers.ModelSerializer):
@@ -167,3 +168,45 @@ class InterviewSerializer(serializers.ModelSerializer):
         model = Interview
         fields = ["id", "job", "interviewer", "candidate", "resume", "status", "feedback", "invitation", "publish_time"]
         read_only_fields = ["resume", "candidate", "interviewer", "invitation", "publish_time"]
+
+
+class InvitationJobSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Job
+        fields = ["id", "title"]
+
+
+class InvitationSerializer(serializers.ModelSerializer):
+    candidate = CandidateSerializer(read_only=True)
+    job = serializers.SerializerMethodField()
+    user_uid = serializers.CharField(write_only=True)
+    status = serializers.IntegerField(write_only=True)
+
+    def get_job(self, obj):
+        job = Job.objects.get(interviews__invitations__id=obj.id)
+        return InvitationJobSerializer(job).data
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        url_kwargs = self.context.get("view").kwargs
+        job_id = url_kwargs.get("id")
+        interview_id = url_kwargs.get("iid")
+        user_uid = validated_data.pop("user_uid")
+
+        get_object_or_404(Job, id=job_id)
+        interview = get_object_or_404(Interview, id=interview_id)
+        user = User.objects.get(uid=user_uid)
+        interviewer = request.user
+        invitation = Invitation.objects.create(
+            interview=interview,
+            candidate=user,
+            interviewer=interviewer,
+            **validated_data
+        )
+        return invitation
+
+    class Meta:
+        model = Invitation
+        fields = ["message", "response", "candidate", "publish_time", "due_time", "job", "user_uid", "update_time",
+                  "status"]
+        read_only_fields = ["response", "publish_time", "due_time", "candidate", "job", "update_time"]

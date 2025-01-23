@@ -1,10 +1,11 @@
 from django_filters import rest_framework as filters
 
-from apps.api.serializers import JobListSerializer, JobSerializer, InterviewSerializer
+from apps.api.serializers import JobListSerializer, JobSerializer, InterviewSerializer, InvitationSerializer, \
+    InterviewInvitationSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 
 from apps.company.models import Company
-from apps.job.models import Job, PublishJob, Interview
+from apps.job.models import Job, PublishJob, Interview, Invitation
 from rest_framework import generics, permissions, status
 from apps.api.authentications import JWTAuthentication
 from rest_framework.exceptions import ValidationError
@@ -155,3 +156,35 @@ class ManageInterviewDetailView(generics.RetrieveUpdateAPIView):
                 interview.job.status = 2
             interview.job.save()
         return Response(data=serializer.data)
+
+
+class ManageInvitationView(generics.CreateAPIView):
+    queryset = Invitation.objects.all()
+    serializer_class = InvitationSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAdminUser]
+    lookup_field = 'id'
+
+
+class ManageInvitationDetailView(generics.UpdateAPIView):
+    queryset = Invitation.objects.all()
+    serializer_class = InterviewInvitationSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [permissions.IsAdminUser]
+    lookup_field = 'ivid'
+
+    def get_object(self):
+        invitation_id = self.kwargs['ivid']  # 获取URL中的参数 ivid
+        interview_id = self.kwargs['iid']
+
+        # 根据 id 和 uid 过滤 Invitation 对象
+        invitation = get_object_or_404(
+            Invitation,
+            id=invitation_id,
+            interview__id=interview_id
+        )
+        self.check_object_permissions(self.request, invitation)
+        return invitation
+
+    def put(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
