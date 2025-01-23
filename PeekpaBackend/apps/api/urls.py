@@ -1,7 +1,7 @@
 from django.urls import path
 from apps.api.view_auth import LoginView, LoginAdminView, RegisterUserView, UserAdminView, UserAdminDetailView, \
     CompanyAdminView
-from apps.api.view_job import ResumeView, AvatarView
+from apps.api.view_job import ResumeView, AvatarView, JobListView, JobDetailView
 from apps.api.view_manage import ManageJobListView, ManageJobNameListView, ManageJobDetailView, ManageInterviewListView, \
     ManageInterviewDetailView, ManageInvitationView, ManageInvitationDetailView, DashboardView
 
@@ -43,4 +43,8 @@ urlpatterns = [
          name="manage_job_interview_invitation_detail_view"),
     # 首页数据接口
     path("manage/dashboard/", DashboardView.as_view(), name="dashboard_view"),
+    # 招聘网站前端职位列表接口
+    path("job/", JobListView.as_view(), name="job_list_view"),
+    # 招聘网站前端职位详情接口
+    path("job/<str:id>/", JobDetailView.as_view(), name="job_detail_view"),
 ]

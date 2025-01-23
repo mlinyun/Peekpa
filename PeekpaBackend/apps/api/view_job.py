@@ -1,14 +1,22 @@
 import uuid
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
-from rest_framework import permissions, status
+from django_filters import rest_framework as filters
+from django.db.models import Q
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import permissions, status, generics
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
-from apps.api.serializers import ResumeSerializer, AvatarSerializer
+from apps.api.serializers import ResumeSerializer, AvatarSerializer, JobListSerializer, JobSerializer
 
-from apps.job.models import Resume
+from apps.job.models import Resume, Job
 from apps.peekpauser.models import Avatar
+from urllib.parse import unquote
+
+from apps.api.permissions import IsGetForAll
+
+from apps.api.authentications import PassGetAuthentication
 
 
 class ResumeView(APIView):
@@ -29,12 +37,12 @@ class ResumeView(APIView):
                 resume.is_active = False
                 resume.save()
         # 获取上传文件名称
-        file = request.FILES.get('resume')
+        file = request.FILES.get("resume")
         file_name = file.name
         # 拼凑存储文件名，并存储在 `/media/resume/` 目录下
-        file_path = f'resume/{".".join(file_name.split(".")[:-1])}_{str(uuid.uuid4())[:8]}.{file_name.split(".")[-1]}'
+        file_path = f"resume/{'.'.join(file_name.split('.')[:-1])}_{str(uuid.uuid4())[:8]}.{file_name.split('.')[-1]}"
         saved_path = default_storage.save(file_path, ContentFile(file.read()))
-        resume = Resume.objects.create(name=file_name, user=self.request.user, url='media/{}'.format(saved_path))
+        resume = Resume.objects.create(name=file_name, user=self.request.user, url="media/{}".format(saved_path))
         return Response(data=ResumeSerializer(resume).data, status=status.HTTP_201_CREATED)
 
 
@@ -49,10 +57,59 @@ class AvatarView(APIView):
             default_storage.delete(avatar.url[6:])
         old_avatars.delete()
         # 获取上传文件名称
-        file = request.FILES.get('avatar')
+        file = request.FILES.get("avatar")
         file_name = file.name
         # 拼凑存储文件名，并存储在 `/media/avatar/` 目录下
-        file_path = f'avatar/{".".join(file_name.split(".")[:-1])}_{str(uuid.uuid4())[:8]}.{file_name.split(".")[-1]}'
+        file_path = f"avatar/{'.'.join(file_name.split('.')[:-1])}_{str(uuid.uuid4())[:8]}.{file_name.split('.')[-1]}"
         saved_path = default_storage.save(file_path, ContentFile(file.read()))
-        avatar = Avatar.objects.create(name=file_name, user=self.request.user, url='media/{}'.format(saved_path))
+        avatar = Avatar.objects.create(name=file_name, user=self.request.user, url="media/{}".format(saved_path))
         return Response(data=AvatarSerializer(avatar).data, status=status.HTTP_201_CREATED)
+
+
+class JobListFilter(filters.FilterSet):
+    q = filters.CharFilter(method="my_custom_filter", label="Search")
+    order = filters.CharFilter(method="order_search", label="Order")
+    experience = filters.CharFilter(method="experience_search", label="Experience")
+    education = filters.CharFilter(method="education_search", label="Education")
+
+    class Meta:
+        model = Job
+        fields = ["q", "order", "education", "experience"]
+
+    def my_custom_filter(self, queryset, name, value):
+        return queryset.filter(
+            Q(title__contains=value) | Q(city__contains=value) | Q(location__contains=value) | Q(
+                company__name__contains=value)
+        )
+
+    def education_search(self, queryset, name, value):
+        decoded_data = unquote(value)
+        if value:
+            return queryset.filter(education=decoded_data)
+        return queryset
+
+    def experience_search(self, queryset, name, value):
+        decoded_data = unquote(value)
+        if value:
+            return queryset.filter(experience=decoded_data)
+        return queryset
+
+    def order_search(self, queryset, name, value):
+        if value == "newest":
+            return queryset.order_by("-publish_time")
+        return queryset
+
+
+class JobListView(generics.ListAPIView):
+    queryset = Job.objects.filter(status=Job.STATUS_PUBLISH).order_by("title")
+    serializer_class = JobListSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = JobListFilter
+
+
+class JobDetailView(generics.RetrieveAPIView):
+    queryset = Job.objects.filter(status=Job.STATUS_PUBLISH)
+    serializer_class = JobSerializer
+    authentication_classes = [PassGetAuthentication]
+    permission_classes = [IsGetForAll]
+    lookup_field = "id"

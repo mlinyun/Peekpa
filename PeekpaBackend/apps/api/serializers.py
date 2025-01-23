@@ -1,3 +1,4 @@
+from django.contrib.auth.models import AnonymousUser
 from rest_framework import serializers
 from apps.company.models import Company
 from apps.job.models import Resume, Job, Interview, Invitation
@@ -87,6 +88,16 @@ class JobListSerializer(serializers.ModelSerializer):
     def get_pass_number(self, obj):
         return Interview.objects.filter(job__id=obj.id, status=4).count()
 
+    def to_representation(self, instance):
+        ret = super(JobListSerializer, self).to_representation(instance)
+        if not (self.context.get("request") and self.context.get("request").user and self.context.get(
+                "request").user.is_staff):
+            ret.pop("status")
+            ret.pop("pass_number")
+            ret.pop("hire_number")
+            ret.pop("resumes")
+        return ret
+
     class Meta:
         model = Job
         fields = ["id", "title", "status", "city", "location", "salary_min", "salary_max", "salary_count", "education",
@@ -99,12 +110,33 @@ class JobListSerializer(serializers.ModelSerializer):
 
 class JobSerializer(serializers.ModelSerializer):
     pass_number = serializers.SerializerMethodField()
-    company_name = serializers.CharField(source="company.name", read_only=True)
-    company_tags = serializers.CharField(source="company.tags", read_only=True)
-    company_size = serializers.CharField(source="company.size", read_only=True)
-    company_website = serializers.CharField(source="company.website", read_only=True)
-    company_id = serializers.CharField(source="company.id", read_only=True)
+    company_name = serializers.CharField(source='company.name', read_only=True)
+    company_tags = serializers.CharField(source='company.tags', read_only=True)
+    company_size = serializers.CharField(source='company.size', read_only=True)
+    company_website = serializers.CharField(source='company.website', read_only=True)
+    company_id = serializers.CharField(source='company.id', read_only=True)
+    has_resume = serializers.SerializerMethodField()
+    applied = serializers.SerializerMethodField()
     resumes = serializers.SerializerMethodField()
+
+    def get_applied(self, obj):
+        if self.context.get("request") \
+                and self.context.get("request").user \
+                and not isinstance(self.context.get("request").user, AnonymousUser) \
+                and not self.context.get("request").user.is_staff:
+            user_uid = self.context.get("request").user.uid
+            apply = Interview.objects.filter(candidate__uid=user_uid, job=obj).count()
+            return bool(apply)
+        return False
+
+    def get_has_resume(self, obj):
+        if self.context.get("request") \
+                and self.context.get("request").user \
+                and not isinstance(self.context.get("request").user, AnonymousUser) \
+                and not self.context.get("request").user.is_staff \
+                and self.context.get("request").user.resume:
+            return True
+        return False
 
     def get_resumes(self, obj):
         return obj.resumes.count()
@@ -116,8 +148,9 @@ class JobSerializer(serializers.ModelSerializer):
         model = Job
         fields = ["id", "title", "status", "city", "location", "salary_min", "salary_max", "salary_count", "education",
                   "pass_number", "hire_number", "experience", "benefit", "description", "publish_time", "resumes",
-                  "company_name", "company_tags", "company_size", "company_website", "company_id"]
-        read_only_fields = ["id", "pass_number", "publish_time", "resumes"]
+                  "company_name", "company_tags", "company_size", "company_website", "company_id", "has_resume",
+                  "applied"]
+        read_only_fields = ["id", "pass_number", "publish_time", "resumes", "has_resume", "applied"]
 
 
 class InterviewInvitationSerializer(serializers.ModelSerializer):
