@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from apps.company.models import Company
-from apps.job.models import Resume, Job, Interview
+from apps.job.models import Resume, Job, Interview, Invitation
 from apps.peekpauser.models import User, Avatar
 
 
@@ -117,3 +117,53 @@ class JobSerializer(serializers.ModelSerializer):
                   "pass_number", "hire_number", "experience", "benefit", "description", "publish_time", "resumes",
                   "company_name", "company_tags", "company_size", "company_website", "company_id"]
         read_only_fields = ["id", "pass_number", "publish_time", "resumes"]
+
+
+class InterviewInvitationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Invitation
+        fields = ["id", "response", "publish_time", "due_time", "message", "update_time"]
+
+
+class InterviewJobSerializer(serializers.ModelSerializer):
+    pass_number = serializers.SerializerMethodField()
+
+    def get_pass_number(self, obj):
+        return Interview.objects.filter(job__id=obj.id, status=4).count()
+
+    class Meta:
+        model = Job
+        fields = ["id", "pass_number", "hire_number", "title"]
+
+
+class CandidateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["uid", "email", "name", "gender", "details"]
+
+
+class InterviewResumeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Resume
+        fields = ["name", "url"]
+
+
+class InterviewSerializer(serializers.ModelSerializer):
+    job = InterviewJobSerializer()
+    candidate = CandidateSerializer()
+    interviewer = serializers.CharField(source="interviewer.name")
+    resume = InterviewResumeSerializer()
+    invitation = serializers.SerializerMethodField()
+
+    def get_invitation(self, obj):
+        invitations = obj.invitations.all()
+        if invitations.count():
+            invitation = invitations.filter(status=obj.status)
+            if invitation.count():
+                return InterviewInvitationSerializer(invitation.all().first()).data
+        return None
+
+    class Meta:
+        model = Interview
+        fields = ["id", "job", "interviewer", "candidate", "resume", "status", "feedback", "invitation", "publish_time"]
+        read_only_fields = ["resume", "candidate", "interviewer", "invitation", "publish_time"]
