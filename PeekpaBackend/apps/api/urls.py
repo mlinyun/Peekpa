@@ -4,8 +4,9 @@ from apps.api.view_auth import LoginView, LoginAdminView, RegisterUserView, User
 from apps.api.view_job import ResumeView, AvatarView, JobListView, JobDetailView, InvitationDetailView, ApplyJobView
 from apps.api.view_manage import ManageJobListView, ManageJobNameListView, ManageJobDetailView, ManageInterviewListView, \
     ManageInterviewDetailView, ManageInvitationView, ManageInvitationDetailView, DashboardView
-
 from apps.api.view_company import CompanyListView, CompanyDetailView
+
+from apps.api.view_index import IndexView
 
 app_name = "api"
 
@@ -57,4 +58,6 @@ urlpatterns = [
     path("company/", CompanyListView.as_view(), name="company_list_view"),
     # 公司详情接口
     path("company/<str:id>/", CompanyDetailView.as_view(), name="company_detail_view"),
+    # 首页接口初始化
+    path("index/", IndexView.as_view(), name="index_view"),
 ]
