@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from apps.peekpauser.models import User
+from apps.job.models import Resume
+from apps.peekpauser.models import User, Avatar
 
 
 class LoginSerializer(serializers.ModelSerializer):
@@ -31,5 +32,16 @@ class RegisterUserSerializer(serializers.ModelSerializer):
 class AdminUserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["uid", "email", "first_name", "last_name", "gender", "data_join", "last_login",
-                  "is_active"]
+        fields = ["uid", "email", "first_name", "last_name", "gender", "data_join", "last_login", "is_active"]
+
+
+class ResumeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Resume
+        fields = "__all__"
+
+
+class AvatarSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Avatar
+        fields = "__all__"

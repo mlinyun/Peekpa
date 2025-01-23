@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import datetime
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -165,3 +166,8 @@ SWAGGER_SETTINGS = {
         }
     }
 }
+
+# 配置上传文件的存储路径
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# 配置上传文件的 URL
+MEDIA_URL = '/media/'
