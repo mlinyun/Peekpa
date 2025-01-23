@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from apps.company.models import Company
-from apps.job.models import Resume
+from apps.job.models import Resume, Job, Interview
 from apps.peekpauser.models import User, Avatar
 
 
@@ -70,3 +70,27 @@ class AdminCompanyListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
         fields = ["id", "name", "website", "user", "email", "first_name", "last_name", "password"]
+
+
+class JobListSerializer(serializers.ModelSerializer):
+    resumes = serializers.SerializerMethodField(read_only=True)
+    pass_number = serializers.SerializerMethodField()
+    company_name = serializers.CharField(source="company.name", read_only=True)
+    company_tags = serializers.CharField(source="company.tags", read_only=True)
+    company_avatar = serializers.CharField(source="company.avatar", read_only=True)
+    company_id = serializers.CharField(source="company.id", read_only=True)
+
+    def get_resumes(self, obj):
+        return Interview.objects.filter(job__id=obj.id).count()
+
+    def get_pass_number(self, obj):
+        return Interview.objects.filter(job__id=obj.id, status=4).count()
+
+    class Meta:
+        model = Job
+        fields = ["id", "title", "status", "city", "location", "salary_min", "salary_max", "salary_count", "education",
+                  "experience", "benefit", "publish_time", "pass_number", "hire_number", "resumes",
+                  "company_name", "description",
+                  "company_tags", "company_avatar", "company_id"]
+        read_only_fields = ["id", "publish_time", "pass_number", "resumes", "company_name", "company_tags",
+                            "company_avatar", "company_id"]
