@@ -43,12 +43,14 @@ INSTALLED_APPS = [
     'apps.peekpauser',  # 注册用户管理应用
     'apps.company',  # 注册公司管理应用
     'apps.job',  # 注册职位管理应用
+    # 'corsheaders',  # 添加 cors headers 应用
 ]
 
 MIDDLEWARE = [
+    # 'corsheaders.middleware.CorsMiddleware',  # 添加 CORS 中间件(必须在 CommonMiddleware 之前)
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -171,3 +173,15 @@ SWAGGER_SETTINGS = {
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # 配置上传文件的 URL
 MEDIA_URL = '/media/'
+
+# # 添加 CORS 配置
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:8080",  # 允许的前端开发服务器地址
+# ]
+#
+# CORS_ALLOW_CREDENTIALS = True  # 允许携带 cookie
+#
+# # CSRF 配置
+# CSRF_TRUSTED_ORIGINS = [
+#     "http://localhost:8080",  # 信任的前端域名
+# ]

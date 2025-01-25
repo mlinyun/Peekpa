@@ -2,7 +2,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router"
 import ROUTER_CONSTANTS from "@/router/constants.ts";
 import PEEKPA_PERMISSION from "@/stores/modules/PermissionConstants";
 
-const LoginPage = () => import("@/pages/user/UserManagePage.vue");
+const LoginPage = () => import("@/pages/user/LoginPage.vue");
 const BasePage = () => import("@/pages/BasePage.vue");
 const CMSBasePage = () => import("@/pages/CMSBasePage.vue");
 const NotFoundPage = () => import("@/pages/exception/NotFoundPage.vue");

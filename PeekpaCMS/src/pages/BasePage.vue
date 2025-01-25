@@ -1,19 +1,21 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
-import { ElMessage } from "element-plus";
+// import { ElMessage } from "element-plus/es";
 import { useRouter } from "vue-router";
 import userStore from "@/stores/modules/User.ts";
 import ROUTER_CONSTANTS from "@/router/constants.ts";
+import HeaderComponent from "@/components/HeaderComponent.vue";
+import SidebarComponent from "@/components/SidebarComponent.vue";
 
 // 创建用户状态管理
-const user = userStore();
+const useUserStore = userStore();
 // 创建全局路由
 const router = useRouter();
 
 // 第一次进入页面时，判断用户是否已经登录，如果没有登录，则跳转到登录页面
 onMounted(() => {
-    if (!user.isLogin) {
-        ElMessage.warning("请先登录");
+    if (!useUserStore.isLogin()) {
+        ElMessage.error("请先登录");
         router.push({
             name: ROUTER_CONSTANTS.LOGIN,
         });
@@ -22,8 +24,8 @@ onMounted(() => {
 </script>
 
 <template>
-    <v-header></v-header>
-    <v-sidebar></v-sidebar>
+    <header-component />
+    <sidebar-component />
     <div class="content-box">
         <div class="content">
             <router-view v-slot="{ Component }">
