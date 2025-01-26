@@ -8,6 +8,12 @@ export {}
 declare global {
   const EffectScope: typeof import('vue')['EffectScope']
   const ElMessage: typeof import('element-plus/es')['ElMessage']
+  const IconEpDocument: typeof import('~icons/ep/document')['default']
+  const IconEpHouse: typeof import('~icons/ep/house')['default']
+  const IconEpOdometer: typeof import('~icons/ep/odometer')['default']
+  const IconEpSetting: typeof import('~icons/ep/setting')['default']
+  const IconEpUser: typeof import('~icons/ep/user')['default']
+  const IconEpVideoCamera: typeof import('~icons/ep/video-camera')['default']
   const computed: typeof import('vue')['computed']
   const createApp: typeof import('vue')['createApp']
   const customRef: typeof import('vue')['customRef']

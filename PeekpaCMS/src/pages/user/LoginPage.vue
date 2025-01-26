@@ -6,7 +6,7 @@ import { type FormInstance, type FormItemRule } from "element-plus";
 // import { ElMessage } from "element-plus/es";
 import ROUTER_CONSTANTS from "@/router/constants.ts";
 import type { Arrayable } from "element-plus/es/utils";
-import { login } from "@/services/user";
+import { userLogin } from "@/services/user";
 import type { AxiosError } from "axios";
 
 // 全局路由
@@ -45,7 +45,7 @@ const submitForm = async (formEl: FormInstance | undefined) => {
     await formEl.validate(async (valid: boolean) => {
         if (valid) {
             try {
-                const response = await login(param.email, param.password);
+                const response = await userLogin(param.email, param.password);
                 if (response.status === 200) {
                     const { data } = response;
                     // 保存用户信息

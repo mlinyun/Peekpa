@@ -40,9 +40,11 @@ onMounted(() => {
 <style scoped>
 .content-box {
     position: absolute;
-    left: 250px;
+    /* left: 250px; */
+    left: 18%;
     right: 0;
-    top: 70px;
+    top: 9%;
+    /* top: 70px; */
     bottom: 0;
     -webkit-transition: left 0.3s ease-in-out;
     transition: left 0.3s ease-in-out;
