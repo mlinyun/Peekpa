@@ -55,7 +55,7 @@ onMounted(() => {
     width: auto;
     height: 100%;
     padding: 10px;
-    overflow-y: scroll;
+    /* overflow-y: scroll; */
     box-sizing: border-box;
 }
 </style>
