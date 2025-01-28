@@ -1,3 +1,5 @@
+import type { BasePaginationResult } from "@/types/Base.ts";
+
 // 创建职位所需的数据内容
 export interface JobCreate {
     title: string; // 职位名称
@@ -12,4 +14,17 @@ export interface JobCreate {
     benefit: string; // 职位福利
     description: string; // 职位具体描述
     education: string; // 职位学历要求
+}
+
+// 职位数据内容
+export interface Job extends JobCreate {
+    id: string; // 职位ID
+    pass_number: number; // 职位通过数
+    publish_time: string; // 职位通过时间
+    resumes: number; // 职位收到简历数
+}
+
+// 职位列表返回数据
+export interface JobListResponse extends BasePaginationResult {
+    results: Job[];
 }
