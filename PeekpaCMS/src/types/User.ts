@@ -1,4 +1,6 @@
 // 用户 store 信息，用于存储在 JWT 令牌信息解析后的结果
+import type { BasePaginationResult } from "@/types/Base.ts";
+
 export interface UserAuthorizeInfo {
     exp: number; // 过期时间
     iat: number; // 签发时间
@@ -13,4 +15,22 @@ export interface UserAuthorizeInfo {
 // 系统登录接口返回的内容
 export interface LoginResponse {
     token: string;
+}
+
+// 用户信息
+export interface User {
+    uid: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    gender: number;
+    data_join: string;
+    last_login: string;
+    password?: string;
+    is_active: boolean;
+}
+
+// 用户列表接口返回的内容
+export interface UserListResponse extends BasePaginationResult {
+    results: User[];
 }

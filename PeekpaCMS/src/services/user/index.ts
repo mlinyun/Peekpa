@@ -1,6 +1,7 @@
 import type { AxiosResponse } from "axios";
-import type { LoginResponse } from "@/types/User.ts";
+import type { LoginResponse, UserListResponse } from "@/types/User.ts";
 import { axiosInstance } from "@/services/Axios.ts";
+import type { UpdateForm } from "@/types/Base.ts";
 
 // 用户登录接口
 const userLogin = (email: string, password: string): Promise<AxiosResponse<LoginResponse>> => {
@@ -15,4 +16,39 @@ const userLogout = (): Promise<AxiosResponse<null>> => {
     return axiosInstance.post("/auth/logout/");
 };
 
-export { userLogin, userLogout };
+// 用户列表
+const getAllUsers = (limit: number, offset: number): Promise<AxiosResponse<UserListResponse>> => {
+    return axiosInstance.get("/manage/user/", {
+        params: {
+            limit,
+            offset,
+        },
+    });
+};
+
+// 用户搜索
+const searchUser = (
+    q: string,
+    limit: number,
+    offset: number,
+): Promise<AxiosResponse<UserListResponse>> => {
+    return axiosInstance.get("/manage/user/", {
+        params: {
+            q,
+            limit,
+            offset,
+        },
+    });
+};
+
+// 更新用户信息
+const updateUser = (uid: string, form: UpdateForm): Promise<AxiosResponse<null>> => {
+    return axiosInstance.patch(`/manage/user/${uid}/`, form);
+};
+
+// 创建用户
+const createUser = (form: UpdateForm): Promise<AxiosResponse<null>> => {
+    return axiosInstance.post("/manage/user/", form);
+};
+
+export { userLogin, userLogout, getAllUsers, searchUser, updateUser, createUser };

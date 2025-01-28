@@ -87,7 +87,7 @@ const handleCreateCompany = async (formEl: FormInstance | undefined) => {
                 const response = await createCompany(createCompanyForm);
                 if (response.status === 201) {
                     ElMessage.success("公司创建成功！");
-                    formEl.resetFields();
+                        formEl.resetFields();
                     showCreate.value = false;
                     await searchCompanyData(search.value, curOffset);
                 }
