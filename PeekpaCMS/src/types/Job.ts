@@ -28,3 +28,7 @@ export interface Job extends JobCreate {
 export interface JobListResponse extends BasePaginationResult {
     results: Job[];
 }
+
+export interface UpdateJobForm extends Job {
+    index: number;
+}

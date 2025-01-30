@@ -1,13 +1,34 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import type { Job, JobListResponse } from "@/types/Job.ts";
+import type { Job, JobListResponse, UpdateJobForm } from "@/types/Job.ts";
 import { timeStampFormat } from "@/utils/Helper.ts";
 import { getAllJobs, searchJob, updateJob } from "@/services/job";
 import ROUTER_CONSTANTS from "@/router/constants.ts";
 import { useRouter } from "vue-router";
 import { UNAUTH_401 } from "@/services/Axios.ts";
-import { ElMessageBox } from "element-plus";
+import { ElMessageBox, type FormInstance, type InputInstance } from "element-plus";
 import type { AxiosError } from "axios";
+import JobPublishForm from "@/pages/job/components/JobPublishForm.vue";
+
+const updateJobForm = reactive<UpdateJobForm>({
+    index: -1,
+    id: "-1",
+    title: "",
+    status: -1,
+    city: "",
+    location: "",
+    salary_min: -1,
+    salary_max: -1,
+    salary_count: -1,
+    hire_number: -1,
+    pass_number: -1,
+    experience: "",
+    benefit: "",
+    education: "",
+    description: "",
+    publish_time: "",
+    resumes: 0,
+});
 
 // 全局路由
 const router = useRouter();
@@ -36,6 +57,8 @@ const data = ref<JobListResponse>();
 const curPage = ref<number>(1);
 const total = ref<number>(0);
 const showUpdate = ref<boolean>(false);
+const updateFormRef = ref<FormInstance>();
+const dialogInput = ref<InputInstance>();
 
 // 请求职位数据
 const requestJobData = async (offset: number) => {
@@ -142,7 +165,25 @@ const showInterviewMangePage = (id: string) => {
 
 // 显示修改对话框
 const showUpdateWindow = (index: number, item: Job) => {
-    console.log("index", index, "item", item);
+    // console.log("index", index, "item", item);
+    showUpdate.value = true;
+    updateJobForm.index = index;
+    updateJobForm.id = item.id;
+    updateJobForm.title = item.title;
+    updateJobForm.status = item.status;
+    updateJobForm.city = item.city;
+    updateJobForm.location = item.location;
+    updateJobForm.salary_count = item.salary_count;
+    updateJobForm.salary_min = item.salary_min;
+    updateJobForm.salary_max = item.salary_max;
+    updateJobForm.hire_number = item.hire_number;
+    updateJobForm.pass_number = item.pass_number;
+    updateJobForm.education = item.education;
+    updateJobForm.experience = item.experience;
+    updateJobForm.benefit = item.benefit;
+    updateJobForm.description = item.description;
+    updateJobForm.publish_time = item.publish_time;
+    updateJobForm.resumes = item.resumes;
 };
 
 // 职位下线操作
@@ -178,7 +219,51 @@ const handlePageChange = async (page: number) => {
 };
 
 // 处理对话框焦点方法
-const handleDialogOpen = () => {};
+const handleDialogOpen = () => {
+    nextTick(() => {
+        if (dialogInput.value) {
+            dialogInput.value.focus();
+        }
+    });
+};
+
+// 职位修改功能
+const handleUpdateJob = async (formEl: FormInstance | undefined) => {
+    if (!formEl) {
+        return;
+    }
+    await formEl.validate(async (valid: boolean) => {
+        if (valid) {
+            try {
+                const updateData: { [key: string]: string | number } = {};
+                Object.entries(updateJobForm).forEach(([key, value]) => {
+                    if (typeof value === "string" || typeof value === "number") {
+                        updateData[key] = value;
+                    }
+                });
+                const response = await updateJob(updateJobForm.id, updateData);
+                if (response.status === 200) {
+                    ElMessage.success("职位修改成功！");
+                    showUpdate.value = false;
+                    const { index } = updateJobForm;
+                    if (data.value) {
+                        // 更新列表数据
+                        data.value.results[index] = response.data;
+                    }
+                    updateData.index = -1;
+                    // 清空表单
+                    formEl.resetFields();
+                } else {
+                    ElMessage.error(`职位修改失败[${response.status}]！`);
+                }
+            } catch (error) {
+                ElMessage.error(`职位修改失败[${(error as AxiosError).message}]！`);
+            }
+        } else {
+            ElMessage.error("请仔细检查表单！");
+        }
+    });
+};
 </script>
 
 <template>
@@ -302,12 +387,19 @@ const handleDialogOpen = () => {};
             :page-size="LIMIT"
             @current-change="handlePageChange"
         ></el-pagination>
-        <el-dialog
-            v-model="showUpdate"
-            title="修改职位信息"
-            width="50%"
-            @open="handleDialogOpen"
-        ></el-dialog>
+        <el-dialog v-model="showUpdate" title="修改职位信息" width="60%" @open="handleDialogOpen">
+            <job-publish-form
+                label_position="left"
+                :model="updateJobForm"
+                @update:model="updateFormRef = $event"
+            ></job-publish-form>
+            <template #footer>
+                <el-button @click="showUpdate = false">取 消</el-button>
+                <el-button type="primary" @click="handleUpdateJob(updateFormRef)">
+                    提 交
+                </el-button>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
