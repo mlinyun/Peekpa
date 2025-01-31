@@ -1,22 +1,31 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { reactive, ref } from "vue";
 import type {
     Interview,
     InterviewInvitation,
     InterviewListResponse,
     JobNameItem,
+    UpdateInterviewForm,
 } from "@/types/Interview.ts";
-import { getAllInterviews, getAllJobName } from "@/services/interview";
+import {
+    createInvitation,
+    getAllInterviews,
+    getAllJobName,
+    updateInterview,
+} from "@/services/interview";
 import { UNAUTH_401 } from "@/services/Axios.ts";
 import { useRoute } from "vue-router";
 import { timeStampFormat } from "@/utils/Helper.ts";
-import type { InputInstance } from "element-plus";
+import { ElMessageBox, type FormInstance, type InputInstance } from "element-plus";
+import type { MessageForm } from "@/types/Message.ts";
+import type { AxiosError } from "axios";
 
 const route = useRoute();
 
 const LIMIT = 10;
 let curOffset = 0;
 const interviewStatus = ["第1轮", "第2轮", "第3轮", "HR轮", "通过", "不合格", "已拒绝"];
+const interviewStatusCN = ["第一轮", "第二轮", "第三轮", "HR轮", "通过", "不合格", "已拒绝"];
 
 const currentJob = ref<string>("all");
 const nameList = ref<JobNameItem[]>([]);
@@ -28,6 +37,27 @@ const curPage = ref<number>(1);
 const showUpdate = ref<boolean>(false);
 const showMessage = ref<boolean>(false);
 const dialogInput = ref<InputInstance>();
+
+const messageForm = reactive<MessageForm>({
+    jobId: "",
+    id: "",
+    candidateId: "",
+    message: "",
+    name: "",
+    status: 0,
+});
+
+const updateFormRef = ref<FormInstance>();
+
+const updateForm = reactive<UpdateInterviewForm>({
+    index: -1,
+    id: "",
+    iid: "",
+    feedback: {} as JSON,
+    status: -1,
+    nextRound: "",
+    nextFeedback: "",
+});
 
 // 请求工作名称数据
 const requestJobNameData = async () => {
@@ -151,7 +181,12 @@ const invitationIsExpired = (dueTime: string) => {
 
 // 显示面试邀请对话框
 const showMessageWindow = (item: Interview) => {
-    console.log(item);
+    showMessage.value = true;
+    messageForm.jobId = item.job.id;
+    messageForm.id = item.id;
+    messageForm.candidateId = item.candidate.uid;
+    messageForm.name = item.candidate.name;
+    messageForm.status = item.status;
 };
 
 // 动态生产 HTML 内容
@@ -193,12 +228,41 @@ const getButtonType = (item: Interview) => {
 
 // 显示填写反馈对话框
 const showUpdateWindow = (index: number, item: Interview) => {
-    console.log("index: ", index, "item:", item);
+    // console.log("index: ", index, "item:", item);
+    showUpdate.value = true;
+    updateForm.feedback = item.feedback;
+    updateForm.id = item.id;
+    updateForm.iid = item.job.id;
+    updateForm.index = index;
+    updateForm.status = item.status + 1;
+    updateForm.nextRound = interviewStatusCN[item.status];
+    updateForm.nextFeedback = "";
 };
 
 // 拒绝操作
 const handleReject = (index: number, item: Interview) => {
-    console.log("index: ", index, "item:", item);
+    // console.log("index: ", index, "item:", item);
+    ElMessageBox.confirm(`确定要拒绝求职者 ${item.candidate.name} 的申请么?`, "警告", {
+        confirmButtonText: "拒绝",
+        cancelButtonText: "取消",
+        type: "error",
+    })
+        .then(async () => {
+            const response = await updateInterview(item.job.id, item.id, { status: 5 });
+            if (response.status === 200) {
+                ElMessage.success("拒绝求职者成功！");
+                if (data.value !== undefined) {
+                    data.value.results[index] = response.data;
+                }
+            } else {
+                ElMessage.error(`拒绝求职者失败[${response.status}].`);
+            }
+        })
+        .catch((error) => {
+            if ((error as AxiosError).name === "CanceledError" && error === "cancel") {
+                ElMessage.error("发生网络错误！");
+            }
+        });
 };
 
 // 页面跳转方法
@@ -207,7 +271,7 @@ const handlePageChange = async (page: number) => {
     await requestInterviewData(currentJob.value, curOffset);
 };
 
-//
+// 处理对话框焦点方法
 const handleDialogOpen = () => {
     nextTick(() => {
         if (dialogInput.value) {
@@ -218,7 +282,75 @@ const handleDialogOpen = () => {
 
 // 获取求职者名称
 const getCandidateName = () => {
-    return "求职者名称";
+    return `发送邀请给 ${messageForm.name}`;
+};
+
+// 创建面试邀请消息
+const sendInvitation = async () => {
+    try {
+        const response = await createInvitation(
+            messageForm.jobId,
+            messageForm.id,
+            messageForm.candidateId,
+            messageForm.message,
+            messageForm.status,
+        );
+        if (response.status === 201) {
+            ElMessage.success("发送邀请成功！");
+            // 重置消息内容
+            messageForm.jobId = "";
+            messageForm.id = "";
+            messageForm.candidateId = "";
+            messageForm.message = "";
+            messageForm.name = "";
+            await requestInterviewData(currentJob.value, curOffset);
+        }
+        showMessage.value = false;
+    } catch (error) {
+        ElMessage.error(`发送邀请失败[${(error as Error).message}].`);
+        showMessage.value = false;
+    }
+};
+
+// 显示这一轮面试进度
+const displayNextRound = () => {
+    return `本次反馈(${updateForm.nextRound})`;
+};
+
+// 更新面试反馈
+const handleUpdate = async (formEl: FormInstance | undefined) => {
+    if (!formEl) {
+        return;
+    }
+    await formEl.validate(async (valid: boolean) => {
+        if (valid) {
+            try {
+                updateForm.feedback = {
+                    ...updateForm.feedback,
+                    [updateForm.nextRound]: updateForm.nextFeedback,
+                };
+                const response = await updateInterview(updateForm.id, updateForm.iid, {
+                    status: updateForm.status,
+                    feedback: updateForm.feedback,
+                });
+                if (response.status === 200) {
+                    ElMessage.success("更新面试反馈成功！");
+                    showUpdate.value = false;
+                    if (data.value !== undefined) {
+                        data.value.results[updateForm.index] = response.data;
+                    }
+                    updateForm.index = -1;
+                    formEl.resetFields();
+                } else {
+                    ElMessage.error(`更新面试反馈失败[${response.status}].`);
+                }
+            } catch (error) {
+                ElMessage.error(`更新面试反馈失败[${(error as AxiosError).message}].`);
+            }
+        } else {
+            ElMessage.error("请检查表单数据是否填写正确！");
+        }
+    });
 };
 </script>
 
@@ -444,8 +576,55 @@ const getCandidateName = () => {
             title="填写面试反馈信息"
             width="50%"
             @open="handleDialogOpen"
-        ></el-dialog>
-        <el-dialog v-model="showMessage" :title="getCandidateName()" width="50%"></el-dialog>
+        >
+            <el-form ref="updateFormRef" :model="updateForm">
+                <div v-if="updateForm.feedback && Object.keys(updateForm.feedback).length">
+                    <el-form-item label="历史记录">
+                        <el-col
+                            v-for="(value, key) in updateForm.feedback"
+                            :key="key"
+                            :offset="2"
+                            :span="22"
+                        >
+                            <el-row>
+                                <el-col :span="4">{{ key }}</el-col>
+                                <el-col :span="20">{{ value }}</el-col>
+                            </el-row>
+                        </el-col>
+                    </el-form-item>
+                </div>
+                <el-form-item :label="displayNextRound()" prop="description">
+                    <el-input
+                        v-model="updateForm.nextFeedback"
+                        :autosize="{ minRows: 4 }"
+                        type="textarea"
+                    ></el-input>
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <div class="dialog-footer">
+                    <el-button @click="showUpdate = false">取 消</el-button>
+                    <el-button type="primary" @click="handleUpdate(updateFormRef)">提 交</el-button>
+                </div>
+            </template>
+        </el-dialog>
+        <el-dialog v-model="showMessage" :title="getCandidateName()" width="50%">
+            <el-form :model="messageForm">
+                <el-form-item label="消息内容" prop="description">
+                    <el-input
+                        v-model="messageForm.message"
+                        :autosize="{ minRows: 4 }"
+                        type="textarea"
+                    ></el-input>
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <div class="dialog-footer">
+                    <el-button @click="showMessage = false">取 消</el-button>
+                    <el-button type="primary" @click="sendInvitation()">发送邀请</el-button>
+                </div>
+            </template>
+        </el-dialog>
     </div>
 </template>
 
@@ -479,5 +658,11 @@ const getCandidateName = () => {
 
 .pagination_main {
     margin-top: 2%;
+}
+
+.dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
 }
 </style>

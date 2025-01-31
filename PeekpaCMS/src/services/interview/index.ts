@@ -1,6 +1,7 @@
 import type { AxiosResponse } from "axios";
-import type { JobNameItem, InterviewListResponse } from "@/types/Interview.ts";
+import type { JobNameItem, InterviewListResponse, Interview } from "@/types/Interview.ts";
 import { axiosInstance } from "@/services/Axios.ts";
+import type { UpdateForm } from "@/types/Base.ts";
 
 // 职位名称接口
 const getAllJobName = (): Promise<AxiosResponse<JobNameItem[]>> => {
@@ -37,4 +38,28 @@ const searchInterview = (
     });
 };
 
-export { getAllJobName, getAllInterviews, searchInterview };
+// 面试更新接口
+const updateInterview = (
+    id: string,
+    iid: string,
+    form: UpdateForm,
+): Promise<AxiosResponse<Interview>> => {
+    return axiosInstance.patch(`/manage/job/${id}/interviews/${iid}/`, form);
+};
+
+// 创建面试邀请消息接口
+const createInvitation = (
+    id: string,
+    iid: string,
+    uid: string,
+    message: string,
+    status: number,
+): Promise<AxiosResponse<null>> => {
+    return axiosInstance.post(`/manage/job/${id}/interviews/${iid}/invitation/`, {
+        user_id: uid,
+        message,
+        status,
+    });
+};
+
+export { getAllJobName, getAllInterviews, searchInterview, updateInterview, createInvitation };

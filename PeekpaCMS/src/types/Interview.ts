@@ -56,3 +56,14 @@ export interface JobNameItem {
     id: string; // 职位 ID
     title: string; // 职位名称
 }
+
+// 面试更新表单
+export interface UpdateInterviewForm {
+    index: number;
+    id: string;
+    iid: string;
+    feedback: JSON;
+    status: number;
+    nextRound: string;
+    nextFeedback: string;
+}
