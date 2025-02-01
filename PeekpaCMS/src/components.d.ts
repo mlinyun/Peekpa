@@ -7,6 +7,8 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    ClockComponent: typeof import('./components/ClockComponent.vue')['default']
+    DashboardCardComponent: typeof import('./components/DashboardCardComponent.vue')['default']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElCol: typeof import('element-plus/es')['ElCol']
     ElConfigProvider: typeof import('element-plus/es')['ElConfigProvider']
@@ -41,9 +43,11 @@ declare module 'vue' {
     IEpDelete: typeof import('~icons/ep/delete')['default']
     IEpDocument: typeof import('~icons/ep/document')['default']
     IEpDownload: typeof import('~icons/ep/download')['default']
+    IEpLock: typeof import('~icons/ep/lock')['default']
     IEpPicture: typeof import('~icons/ep/picture')['default']
     IEpSearch: typeof import('~icons/ep/search')['default']
     IEpSetting: typeof import('~icons/ep/setting')['default']
+    IEpUser: typeof import('~icons/ep/user')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SidebarComponent: typeof import('./components/SidebarComponent.vue')['default']
