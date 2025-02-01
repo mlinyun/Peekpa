@@ -107,7 +107,7 @@ const routes: RouteRecordRaw[] = [
             },
         ],
     },
-    // 404页面
+    // 404 页面
     {
         path: "/:pathMatch(.*)*",
         name: ROUTER_CONSTANTS.NOTFOUND_404,
