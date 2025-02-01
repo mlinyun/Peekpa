@@ -1,5 +1,5 @@
 import type { AxiosResponse } from "axios";
-import type { LoginResponse, UserListResponse } from "@/types/User.ts";
+import type { LoginResponse, UserListResponse, UserSetting } from "@/types/User.ts";
 import { axiosInstance } from "@/services/Axios.ts";
 import type { UpdateForm } from "@/types/Base.ts";
 
@@ -51,4 +51,27 @@ const createUser = (form: UpdateForm): Promise<AxiosResponse<null>> => {
     return axiosInstance.post("/manage/user/", form);
 };
 
-export { userLogin, userLogout, getAllUsers, searchUser, updateUser, createUser };
+// 获取用户信息
+const getUserInfo = (): Promise<AxiosResponse<UserSetting>> => {
+    return axiosInstance.get("/manage/setting/");
+};
+
+// 更新用户信息
+const updateUserInfo = (form: FormData): Promise<AxiosResponse<null>> => {
+    return axiosInstance.patch("/manage/setting/", form, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+    });
+};
+
+export {
+    userLogin,
+    userLogout,
+    getAllUsers,
+    searchUser,
+    updateUser,
+    createUser,
+    getUserInfo,
+    updateUserInfo,
+};

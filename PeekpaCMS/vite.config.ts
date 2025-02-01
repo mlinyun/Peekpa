@@ -70,4 +70,8 @@ export default defineConfig({
             } as ProxyOptions,
         },
     },
+    // 配置环境变量
+    define: {
+        "process.env": process.env,
+    },
 });

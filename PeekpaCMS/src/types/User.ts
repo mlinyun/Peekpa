@@ -34,3 +34,21 @@ export interface User {
 export interface UserListResponse extends BasePaginationResult {
     results: User[];
 }
+
+// 用户个人信息设置
+export interface UserSetting {
+    avatar: string;
+    name: string;
+    description: string;
+    size: string;
+    slogan: string;
+    tags: string | string[];
+    website: string;
+    user: {
+        email: string;
+        name: string;
+        gender: number;
+    };
+    password?: string;
+    avatar_file?: File;
+}
