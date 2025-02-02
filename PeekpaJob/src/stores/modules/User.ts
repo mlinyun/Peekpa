@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import type { LoginResponse, UserAuthorizeInfo } from "@/types/User.ts";
 import { jwtDecode } from "jwt-decode";
 
-const PEEKPA_USER = "PeekpaJobCMS";
+const PEEKPA_USER = "PeekpaJob";
 
 interface AuthToken {
     token: string;
@@ -13,6 +13,7 @@ const userStore = defineStore("User", {
     // state 定义
     state: (): AuthToken => {
         return {
+            // 使用 localStorage 做本地持久化管理
             token: localStorage.getItem(PEEKPA_USER) || "",
         };
     },

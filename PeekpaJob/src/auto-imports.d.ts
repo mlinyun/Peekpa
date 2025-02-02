@@ -63,7 +63,7 @@ declare global {
     const watchPostEffect: (typeof import("vue"))["watchPostEffect"];
     const watchSyncEffect: (typeof import("vue"))["watchSyncEffect"];
 }
-// for type re-export
+// for types re-export
 declare global {
     // @ts-ignore
     export type {
