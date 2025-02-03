@@ -37,4 +37,9 @@ const uploadAvatar = (file: File): Promise<AxiosResponse<AvatarResponse>> => {
     });
 };
 
-export { signin, signup, updateUserInfo, uploadAvatar };
+// 登出接口
+const userLogout = (): Promise<AxiosResponse<null>> => {
+    return axiosInstance.post("/auth/logout/");
+};
+
+export { signin, signup, updateUserInfo, uploadAvatar, userLogout };

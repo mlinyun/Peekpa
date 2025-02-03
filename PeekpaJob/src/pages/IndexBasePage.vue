@@ -2,6 +2,8 @@
 import { type Component } from "vue";
 import { useRoute } from "vue-router";
 import ROUTER_CONSTANTS from "@/router/constants.ts";
+import LoadingComponent from "@/components/LoadingComponent.vue";
+import LoadFailedComponent from "@/components/LoadFailedComponent.vue";
 
 // 路由对象
 const route = useRoute();
@@ -9,6 +11,8 @@ const route = useRoute();
 let currentComponent: Component;
 
 const baseLoadingComponentConfig = {
+    loadingComponent: LoadingComponent,
+    errorComponent: LoadFailedComponent,
     timeout: 10000,
 };
 
