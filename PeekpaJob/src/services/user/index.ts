@@ -1,5 +1,5 @@
 import type { AxiosResponse } from "axios";
-import type { LoginResponse } from "@/types/User.ts";
+import type { AvatarResponse, LoginResponse } from "@/types/User.ts";
 import { axiosInstance } from "@/services/Axios.ts";
 import type { UpdateForm } from "@/types/Base.ts";
 
@@ -27,7 +27,7 @@ const updateUserInfo = (form: UpdateForm): Promise<AxiosResponse<null>> => {
 };
 
 // 头像上传接口
-const uploadAvatar = (file: File): Promise<AxiosResponse<AxiosResponse>> => {
+const uploadAvatar = (file: File): Promise<AxiosResponse<AvatarResponse>> => {
     const formData = new FormData();
     formData.append("avatar", file);
     return axiosInstance.post("/avatar/upload/", formData, {

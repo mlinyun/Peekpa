@@ -54,3 +54,20 @@ export interface AvatarResponse {
     // 头像 URL
     url: string;
 }
+
+// 用户详细信息接口
+export interface InfoForm {
+    phone: string;
+    gender: number;
+    avatar: string;
+    position: string;
+    education: string;
+    school: string;
+    major: string;
+    experience_year: string;
+    status: string;
+    city: string;
+    company_name: string;
+    salary_min: string;
+    salary_max: string;
+}
