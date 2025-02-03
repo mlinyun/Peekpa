@@ -1,6 +1,6 @@
 import { fileURLToPath, URL } from "node:url";
 
-import { defineConfig } from "vite";
+import { defineConfig, ProxyOptions } from "vite";
 import vue from "@vitejs/plugin-vue";
 import vueDevTools from "vite-plugin-vue-devtools";
 import AutoImport from "unplugin-auto-import/vite";
@@ -51,6 +51,22 @@ export default defineConfig({
     resolve: {
         alias: {
             "@": pathSrc,
+        },
+    },
+    // 配置服务器的代理设置
+    server: {
+        port: 5173,
+        open: true,
+        // 代理设置，将 /api 开头的请求代理到 http://localhost:8081
+        proxy: {
+            "/api": {
+                // 目标服务器地址（不能写 localhost）
+                target: "http://127.0.0.1:8081/api",
+                // 更改请求头中的 origin 为代理服务器地址
+                changeOrigin: true,
+                // 重写请求路径，将 /api 开头的路径去掉 /api
+                rewrite: (path) => path.replace(/^\/api/, ""),
+            } as ProxyOptions,
         },
     },
 });

@@ -22,3 +22,35 @@ export interface UserAuthorizeInfo {
 export interface LoginResponse {
     token: string;
 }
+
+// 用户登录表单
+export interface LoginForm {
+    // 用户邮箱
+    email: string;
+    // 用户密码
+    password: string;
+}
+
+// 用户注册表单
+export interface SignupForm {
+    // 用户邮箱
+    email: string;
+    // 用户密码
+    password: string;
+    // 用户姓
+    first_name: string;
+    // 用户名
+    last_name: string;
+}
+
+// 头像上传接口
+export interface AvatarResponse {
+    // 头像 ID
+    id: string;
+    // 头像名称
+    name: string;
+    // 用户 ID
+    user: string;
+    // 头像 URL
+    url: string;
+}

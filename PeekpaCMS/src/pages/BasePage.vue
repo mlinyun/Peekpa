@@ -55,7 +55,17 @@ onMounted(() => {
     width: auto;
     height: 100%;
     padding: 10px;
-    /* overflow-y: scroll; */
+    overflow-y: auto;
     box-sizing: border-box;
+}
+
+/* 美化滚动条 */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
 }
 </style>
