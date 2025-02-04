@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import HeaderComponent from "@/components/header/index.vue";
+import HeaderComponent from "@/components/HeaderComponent/index.vue";
 </script>
 
 <template>
     <el-container class="peekpa-container">
-        <!-- 此处应该是 header 组件 -->
+        <!-- 此处应该是 HeaderComponent 组件 -->
         <el-header class="peekpa-header">
             <HeaderComponent></HeaderComponent>
         </el-header>
